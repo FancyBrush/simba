@@ -2,7 +2,6 @@ import os
 import time
 import subprocess
 import itertools
-import deeplabcut
 import sys
 from tkinter import *
 from tkinter.filedialog import askopenfilename,askdirectory
@@ -39,6 +38,7 @@ from extract_seqframes import *
 from classifier_validation import *
 from train_multiple_models_from_meta import *
 from train_model_2 import *
+from multiplecrop import *
 import cv2
 from validate_model_on_single_video import *
 import warnings
@@ -67,8 +67,6 @@ from sklearn_plot_scripts.plot_sklearn_results_4bp import plotsklearnresult_4
 
 simBA_version = 1.0
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-
 
 
 class processvid_title(Frame):
@@ -696,7 +694,6 @@ class Button_getcoord(Frame):
         ppms = self.ppm_list[count].get()
         return ppms
 
-
 def Exit():
     app.root.destroy()
 
@@ -996,505 +993,6 @@ class crop_video:
         self.videopath1selected.grid(row=0,sticky=W)
         button_cropvid.grid(row=1,sticky=W,pady=10)
 
-class create_project_DLC:
-
-    def __init__(self):
-
-        # Popup window
-        createproject = Toplevel()
-        createproject.minsize(400, 250)
-        createproject.wm_title("Create Project")
-        createproject.iconbitmap(maincwd+'\\'"golden_lab.ico")
-
-        self.label_dlc_createproject = LabelFrame(createproject,text='Create Project',font =("Helvetica",12,'bold'))
-        #project name
-        self.label_projectname = Entry_Box(self.label_dlc_createproject,'Project name','16')
-
-        #Experimenter name
-        self.label_experimentername = Entry_Box(self.label_dlc_createproject,'Experimenter name','16')
-
-        #button 1
-        button_videofol = Button(self.label_dlc_createproject,text='Import Single Video',command=self.changetovideo2,fg='blue')
-        #button 2
-        button_videofo2 = Button(self.label_dlc_createproject,text='Import Multiple Videos',command=self.changetovideo,fg='green4')
-
-        # Video Path
-        self.videopath1selected = FolderSelect(self.label_dlc_createproject, 'Video Folder          ',title='Select folder with videos',color='green4')
-        self.videopath1selected.grid(row=4, sticky=W)
-
-        #video folder
-        self.folderpath1selected = FolderSelect(self.label_dlc_createproject,'Project directory   ',title='Select main directory')
-
-        # # statusbar
-        # self.projectcreated = IntVar()
-        # Label(createproject, textvariable=self.projectcreated, bd=1, relief=SUNKEN).grid(row=7,sticky=W)
-        # self.projectcreated.set('Status: Waiting for input...')
-
-        #checkbox_apply golden aggresion config yaml settings
-        self.var_changeyaml = IntVar()
-        checkbox2 = Checkbutton(self.label_dlc_createproject,text='Apply Golden Lab 16-body part config',variable=self.var_changeyaml)
-
-        #checkbox for copy videos true or false
-        self.var_copyvid = IntVar()
-        checkbox1 = Checkbutton(self.label_dlc_createproject,text='Copy videos (If unchecked, shortcuts are created)',variable=self.var_copyvid)
-
-        #run create project
-        button_createproject = Button(self.label_dlc_createproject,text='Create Project',fg='red',command=self.createprojectcommand)
-
-        #organize
-        self.label_dlc_createproject.grid(row=0)
-        self.label_projectname.grid(row=0,column=0,sticky=W)
-        self.label_experimentername.grid(row=1,column=0,sticky=W)
-        button_videofol.grid(row=2,sticky=W,pady=5)
-        button_videofo2.grid(row=3,sticky=W,pady=5)
-        self.folderpath1selected.grid(row=5,sticky=W)
-        checkbox2.grid(row=6,column=0,sticky=W)
-        checkbox1.grid(row=7,sticky=W)
-        button_createproject.grid(row=8,column=3,pady=10,padx=5)
-
-    def changetovideo(self):
-        self.videopath1selected.grid_remove()
-        self.videopath1selected = FolderSelect(self.label_dlc_createproject, 'Video Folder          ',title='Select folder with videos',color='green4')
-        self.videopath1selected.grid(row=4, sticky=W)
-
-
-    def changetovideo2(self):
-        self.videopath1selected.grid_remove()
-        self.videopath1selected = FileSelect(self.label_dlc_createproject, 'Video path             ',color='blue',title='Select a video file')
-        self.videopath1selected.grid(row=4, sticky=W)
-
-    def createprojectcommand(self):
-        projectname = self.label_projectname.entry_get
-        experimentalname = self.label_experimentername.entry_get
-        if self.var_copyvid.get()==1:
-            copyvid = True
-        elif self.var_copyvid.get()==0:
-            copyvid = False
-
-        if 'FileSelect' in str(type(self.videopath1selected)):
-            videolist = [self.videopath1selected.file_path]
-        else:
-            try:
-                videolist = []
-
-                for i in os.listdir(self.videopath1selected.folder_path):
-                    if ('.avi' or '.mp4') in i:
-                        i = self.videopath1selected.folder_path + '\\' + i
-                        videolist.append(i)
-            except:
-                print('Please select a video folder to import videos')
-
-        if self.var_changeyaml.get()==1:
-            if (projectname !='') and (experimentalname !='') and ('No'and'selected' not in videolist) and (self.folderpath1selected.folder_path!='No folder selected'):
-                config_path = deeplabcut.create_new_project(str(projectname), str(experimentalname), videolist,working_directory=str(self.folderpath1selected.folder_path), copy_videos=copyvid)
-                changedlc_config(config_path)
-            else:
-                print('Please make sure all the information are filled in')
-        else:
-            if (projectname != '') and (experimentalname != '') and ('No' and 'selected' not in videolist) and (self.folderpath1selected.folder_path != 'No folder selected'):
-                config_path = deeplabcut.create_new_project(str(projectname), str(experimentalname), videolist,working_directory=str(self.folderpath1selected.folder_path), copy_videos=copyvid)
-            else:
-                print('Please make sure all the information are filled in')
-class Load_DLC_Model:
-
-    def __init__(self):
-        # Popup window
-        loadmodel = Toplevel()
-        loadmodel.minsize(200, 200)
-        loadmodel.wm_title("Load DLC Model")
-        loadmodel.iconbitmap(maincwd+'\\'"golden_lab.ico")
-
-        tab_parent = ttk.Notebook(loadmodel)
-
-        tab1 = ttk.Frame(tab_parent)
-        tab2 = ttk.Frame(tab_parent)
-        tab3 = ttk.Frame(tab_parent)
-        tab4 = ttk.Frame(tab_parent)
-        tab7 = ttk.Frame(tab_parent)
-        tab8 = ttk.Frame(tab_parent)
-        tab9 = ttk.Frame(tab_parent)
-        tab10 = ttk.Frame(tab_parent)
-        tab11 = ttk.Frame(tab_parent)
-        tab12 = ttk.Frame(tab_parent)
-        tab13 = ttk.Frame(tab_parent)
-        tab14 = ttk.Frame(tab_parent)
-        tab15 = ttk.Frame(tab_parent)
-
-        tab_parent.add(tab1, text=f'{"[ Load model ]": ^20s}')
-        tab_parent.add(tab2,text=f'{"[ Generate temp yaml ]": ^20s}')
-        tab_parent.add(tab3, text=f'{"[ Add videos into project ]": ^20s}')
-        tab_parent.add(tab4, text=f'{"[ Extract / label frames ]": ^20s}')
-        tab_parent.add(tab7, text=f'{"[ Generate training set ]": ^20s}')
-        tab_parent.add(tab10, text=f'{"[ Video analysis ]": ^20s}')
-        tab_parent.add(tab13, text=f'{"[ Extract outliers ]": ^20s}')
-        tab_parent.grid(row=0)
-
-        #Load Model : configpath
-        labelframe_loadmodel = LabelFrame(tab1, text='Load Model', font=("Helvetica",12,'bold'),padx=5,pady=5)
-        self.label_set_configpath = FileSelect(labelframe_loadmodel, 'DLC config path (.yaml): ',title='Select a .yaml file')
-
-        # generate yaml file
-        label_generatetempyaml = LabelFrame(tab2,text='Generate Temp yaml (for extracting frames from subset of videos)', font=("Helvetica",12,'bold') ,padx=5,pady=5)
-        label_tempyamlsingle = LabelFrame(label_generatetempyaml,text='Single video',padx=5,pady=5)
-        self.label_genyamlsinglevideo = FileSelect(label_tempyamlsingle,'Select video:',title='Select a video file')
-        button_generatetempyaml_single = Button(label_tempyamlsingle,text='Add single video',command=lambda:generatetempyaml(self.label_set_configpath.file_path,self.label_genyamlsinglevideo.file_path))
-        label_tempyamlmulti =LabelFrame(label_generatetempyaml,text='Multiple videos',padx=5,pady=5)
-        self.label_genyamlmultivideo = FolderSelect(label_tempyamlmulti,'Select video folder:',title='Select video folder')
-        button_generatetempyaml_multi = Button(label_tempyamlmulti,text='Add multiple videos',command=self.generateyamlmulti)
-        label_tempyml = Label(label_generatetempyaml,text='Note: After creating the temp yaml with the selected videos, load the temp.yaml file in "Load Model".',font=('Times',10,'italic'))
-        label_tempyml2 = Label(label_generatetempyaml,text='       Then, you can proceed to extract frames.',font=('Times',10,'italic'))
-
-        #singlevid multivid
-        labelframe_singlemultivid = LabelFrame(tab3,text='Add Videos into project',font=("Helvetica",12,'bold'),padx=5,pady=5)
-        labelframe_singlevid = LabelFrame(labelframe_singlemultivid,text='Single Video',padx=5,pady=5)
-        labelframe_multivid = LabelFrame(labelframe_singlemultivid,text='Multiple Videos',padx=5,pady=5)
-        self.label_set_singlevid = FileSelect(labelframe_singlevid, 'Select Single Video: ',title='Select a video file')
-        self.label_video_folder = FolderSelect(labelframe_multivid, 'Select Folder with videos:',title='Select video folder')
-        button_add_single_video = Button(labelframe_singlevid,text='Add single video',command = self.dlc_addsinglevideo,fg='red')
-        button_add_multi_video = Button(labelframe_multivid,text='Add multiple videos',command = self.dlc_addmultivideo_command,fg='red')
-
-        ###########extract frames########
-        label_extractframes = LabelFrame(tab4, text='Extract Frames DLC', font=("Helvetica",12,'bold'),padx=15,pady=5)
-        # mode
-        self.label_numframes2pick = Entry_Box(label_extractframes,'numframes2pick:','26')
-        label_mode = Label(label_extractframes, text='Mode', font="Verdana 10 underline")
-        self.mode = IntVar()
-        checkbox_auto = Radiobutton(label_extractframes, text="Automatic", variable=self.mode, value=1)
-        checkbox_manual = Radiobutton(label_extractframes, text="Manual", variable=self.mode, value=2)
-        # algorithm
-        label_algo = Label(label_extractframes, text='Algorithm ', font="Verdana 10 underline")
-        self.algo = IntVar()
-        checkbox_uniform = Radiobutton(label_extractframes, text="Uniform", variable=self.algo, value=1)
-        checkbox_kmean = Radiobutton(label_extractframes, text="KMeans", variable=self.algo, value=2)
-        # cluster resize width
-        self.label_clusterresize = Entry_Box(label_extractframes, 'Cluster Resize Width (Default = 30)', '26')
-        # cluster step
-        self.label_clusterstep = Entry_Box(label_extractframes, 'Cluster Step (Default = 1)', '26')
-        # cluster color
-        label_clustercolor = Label(label_extractframes, text='Cluster color', font="Verdana 10 underline")
-        # checkbox cluster color
-        self.var_clustercolor = IntVar()
-        checkbox_clustercolor = Checkbutton(label_extractframes, text='True', variable=self.var_clustercolor)
-        # use opencv
-        label_useopencv = Label(label_extractframes, text='Use OpenCV', font="Verdana 10 underline")
-        # checkbox use opencv or not
-        self.var_useopencv = IntVar()
-        checkbox_useopencv = Checkbutton(label_extractframes, text='True', variable=self.var_useopencv)
-        # extractframecommand
-        button_extractframe = Button(label_extractframes, text='Extract Frames', command=self.dlc_extractframes_command)
-
-        ##########label Frames#####
-        label_labelframes = LabelFrame(tab4, text='Label Frames', font=("Helvetica",12,'bold'),padx=15,pady=5)
-        self.button_label_frames = Button(label_labelframes, text='Label Frames', command=self.dlc_label_frames_command)
-
-        ##########Check Labels#####
-        label_checklabels = LabelFrame(tab4, text='Check Labels', font=("Helvetica",12,'bold'),padx=15,pady=5)
-        self.button_check_labels = Button(label_checklabels, text='Check Labelled Frames', command=self.dlc_check_labels_command)
-
-        ####generate training sets#####
-        label_generate_trainingsets = LabelFrame(tab7,text='Generate Training Set',font =("Helvetica",12,'bold'),padx=15,pady=5)
-        self.button_generate_trainingsets = Button(label_generate_trainingsets, text='Generate training set',command=self.dlc_generate_trainingsets_command)
-
-        #####train network####
-        label_train_network = LabelFrame(tab7,text= 'Train Network',font =("Helvetica",12,'bold'),padx=15,pady=5)
-        self.label_iteration = Entry_Box(label_train_network,'iteration','10')
-        self.button_update_iteration = Button(label_train_network,text='Update iteration',command =lambda:updateiteration(self.label_set_configpath.file_path,self.label_iteration.entry_get))
-        self.init_weight = FileSelect(label_train_network,'init_weight     ',title='Select training weight, eg: .DATA-00000-OF-00001 File')
-        self.update_init_weight = Button(label_train_network,text='Update init_weight',command=lambda:update_init_weight(self.label_set_configpath.file_path,self.init_weight.file_path))
-        self.button_train_network = Button(label_train_network, text='Train Network',command=self.dlc_train_network_command)
-
-        #######evaluate network####
-        label_eva_network = LabelFrame(tab7,text='Evaluate Network',font = ("Helvetica",12,'bold'),padx=15,pady=5)
-        self.button_evaluate_network = Button(label_eva_network, text='Evaluate Network',command=self.dlc_evaluate_network_command)
-
-        #####video analysis####
-        label_video_analysis = LabelFrame(tab10,text='Video Analysis',font=("Helvetica",12,'bold'),padx=15,pady=5)
-        #singlevideoanalysis
-        label_singlevideoanalysis = LabelFrame(label_video_analysis,text='Single Video Analysis',pady=5,padx=5)
-        self.videoanalysispath = FileSelect(label_singlevideoanalysis, "Video path",title='Select a video file')
-        button_vidanalysis = Button(label_singlevideoanalysis, text='Single Video Analysis', command=self.dlc_video_analysis_command1)
-        #multi video analysis
-        label_multivideoanalysis = LabelFrame(label_video_analysis,text='Multiple Videos Analysis',pady=5,padx=5)
-        self.videofolderpath = FolderSelect(label_multivideoanalysis,'Folder Path',title='Select video folder')
-        self.video_type = Entry_Box(label_multivideoanalysis,'Video type(eg:mp4,avi):','18')
-        button_multivideoanalysis = Button(label_multivideoanalysis,text='Multi Videos Analysis',command=self.dlc_video_analysis_command2)
-
-        #### plot####
-        label_plot = LabelFrame(tab10,text='Plot Video Graph',font=("Helvetica",12,'bold'),padx=15,pady=5)
-        # videopath
-        self.videoplotpath = FileSelect(label_plot, "Video path",title='Select a video file')
-        # plot button
-        button_plot = Button(label_plot, text='Plot Results', command=self.dlc_plot_videoresults_command)
-
-        #####create video####
-        label_createvideo = LabelFrame(tab10,text='Create Video',font=("Helvetica",12,'bold'),padx=15,pady=5)
-        # videopath
-        self.createvidpath = FileSelect(label_createvideo, "Video path",title='Select a video file')
-        # save frames
-        self.var_saveframes = IntVar()
-        checkbox_saveframes = Checkbutton(label_createvideo, text='Save Frames', variable=self.var_saveframes)
-        # create video button
-        button_createvideo = Button(label_createvideo, text='Create Video', command=self.dlc_create_video_command)
-
-        ######Extract Outliers####
-        label_extractoutlier = LabelFrame(tab13,text='Extract Outliers',font=("Helvetica",12,'bold'),pady=5,padx=5)
-        self.label_extractoutliersvideo = FileSelect(label_extractoutlier,'Videos to correct:',title='Select a video file')
-        button_extractoutliers = Button(label_extractoutlier,text='Extract Outliers',command =lambda:deeplabcut.extract_outlier_frames(self.label_set_configpath.file_path, [str(self.label_extractoutliersvideo.file_path)],automatic=True) )
-
-        ####label outliers###
-        label_labeloutliers = LabelFrame(tab13,text='Label Outliers',font =("Helvetica",12,'bold'),pady=5,padx=5)
-        button_refinelabels = Button(label_labeloutliers,text='Refine Outliers',command=lambda:deeplabcut.refine_labels(self.label_set_configpath.file_path))
-
-        ####merge labeled outliers ###
-        label_mergeoutliers = LabelFrame(tab13,text='Merge Labelled Outliers',font=("Helvetica",12,'bold'),pady=5,padx=5)
-        button_mergelabeledoutlier = Button(label_mergeoutliers,text='Merge Labelled Outliers',command=lambda:deeplabcut.merge_datasets(self.label_set_configpath.file_path))
-
-        #organize
-        labelframe_loadmodel.grid(row=0,sticky=W,pady=5)
-        self.label_set_configpath.grid(row=0,sticky=W)
-
-        label_generatetempyaml.grid(row=1,sticky=W)
-        label_tempyamlsingle.grid(row=0,sticky=W)
-        self.label_genyamlsinglevideo.grid(row=0,sticky=W)
-        button_generatetempyaml_single.grid(row=1,sticky=W)
-        label_tempyamlmulti.grid(row=1,sticky=W)
-        self.label_genyamlmultivideo.grid(row=0,sticky=W)
-        button_generatetempyaml_multi.grid(row=1,sticky=W)
-        label_tempyml.grid(row=2,sticky=W)
-        label_tempyml2.grid(row=3, sticky=W)
-
-        labelframe_singlemultivid.grid(row=2,sticky=W,pady=5)
-        labelframe_singlevid.grid(row=0,sticky=W)
-        self.label_set_singlevid.grid(row=0,sticky=W)
-        button_add_single_video.grid(row=1,sticky=W)
-        labelframe_multivid.grid(row=1,sticky=W)
-        self.label_video_folder.grid(row=0,sticky=W)
-        button_add_multi_video.grid(row=1,sticky=W)
-
-        label_extractframes.grid(row=3,column=0, sticky=W,pady=5,padx=5)
-        self.label_numframes2pick.grid(row=0,sticky=W)
-        label_mode.grid(row=1, sticky=W)
-        checkbox_auto.grid(row=2, sticky=W)
-        checkbox_manual.grid(row=3, sticky=W)
-        label_algo.grid(row=4, sticky=W)
-        checkbox_uniform.grid(row=5, sticky=W)
-        checkbox_kmean.grid(row=6, sticky=W)
-        self.label_clusterresize.grid(row=7, sticky=W)
-        self.label_clusterstep.grid(row=8, sticky=W)
-        label_clustercolor.grid(row=9, sticky=W)
-        checkbox_clustercolor.grid(row=10, sticky=W)
-        label_useopencv.grid(row=11, sticky=W)
-        checkbox_useopencv.grid(row=12, sticky=W)
-        button_extractframe.grid(row=13,sticky=W)
-
-        label_labelframes.grid(row=3,column=1,sticky=W+N,pady=5,padx=5)
-        self.button_label_frames.grid(row=0,sticky=W)
-
-        label_checklabels.grid(row=3,column=2,sticky=W+N,pady=5,padx=5)
-        self.button_check_labels.grid(row=0,sticky=W)
-
-        label_generate_trainingsets.grid(row=6,sticky=W,pady=5)
-        self.button_generate_trainingsets.grid(row=0,sticky=W)
-
-        label_train_network.grid(row=7,sticky=W,pady=5)
-        self.label_iteration.grid(row=0,column=0,sticky=W)
-        self.button_update_iteration.grid(row=0,column=1,sticky=W)
-        self.init_weight.grid(row=1,column=0,sticky=W)
-        self.update_init_weight.grid(row=1,column=1,sticky=W)
-        self.button_train_network.grid(row=2,sticky=W)
-
-        label_eva_network.grid(row=8,sticky=W,pady=5)
-        self.button_evaluate_network.grid(row=0,sticky=W)
-        #video analysis
-        label_video_analysis.grid(row=9,sticky=W,pady=5)
-        label_singlevideoanalysis.grid(row=0,sticky=W,pady=5)
-        label_multivideoanalysis.grid(row=1,sticky=W,pady=5)
-        self.videoanalysispath.grid(row=0,sticky=W)
-        button_vidanalysis.grid(row=2,sticky=W)
-        self.videofolderpath.grid(row=3,sticky=W,pady=5)
-        self.video_type.grid(row=4,sticky=W)
-        button_multivideoanalysis.grid(row=5,sticky=W)
-
-        label_plot.grid(row=10,sticky=W,pady=5)
-        self.videoplotpath.grid(row=0,sticky=W)
-        button_plot.grid(row=1,sticky=W)
-
-        label_createvideo.grid(row=11,sticky=W,pady=5)
-        self.createvidpath.grid(row=0,sticky=W)
-        checkbox_saveframes.grid(row=1,sticky=W)
-        button_createvideo.grid(row=2,sticky=W)
-
-        label_extractoutlier.grid(row=12,sticky=W,pady=5)
-        self.label_extractoutliersvideo.grid(row=0,sticky=W)
-        button_extractoutliers.grid(row=1,sticky=W)
-
-        label_labeloutliers.grid(row=13,sticky=W,pady=5)
-        button_refinelabels.grid(row=0,sticky=W)
-
-        label_mergeoutliers.grid(row=14,sticky=W,pady=5)
-        button_mergelabeledoutlier.grid(row=0,sticky=W)
-
-
-    def dlc_addsinglevideo(self):
-        try:
-            deeplabcut.add_new_videos(self.label_set_configpath.file_path, [str(self.label_set_singlevid.file_path)],copy_videos=True)
-        except FileNotFoundError:
-            print('...')
-            print('Fail to add video, please load .yaml file and select video file')
-
-    def generateyamlmulti(self):
-        try:
-
-            config_path = self.label_set_configpath.file_path
-            directory = self.label_genyamlmultivideo.folder_path
-            filesFound = []
-
-            ########### FIND FILES ###########
-            for i in os.listdir(directory):
-                if '.avi' or '.mp4' in i:
-                    a = os.path.join(directory, i)
-                    filesFound.append(a)
-                    print(a)
-            print(filesFound)
-
-            generatetempyaml_multi(config_path,filesFound)
-        except FileNotFoundError:
-            print('Fail to add videos, please load .yaml file and select video folder')
-
-    def dlc_addmultivideo_command(self):
-        try:
-            config_path = self.label_set_configpath.file_path
-            directory = self.label_video_folder.folder_path
-            filesFound = []
-
-            ########### FIND FILES ###########
-            for i in os.listdir(directory):
-                if 'avi' or '.mp4' in i:
-                    a = os.path.join(directory, i)
-                    deeplabcut.add_new_videos(config_path, [str(a)], copy_videos=True)
-
-            print("Videos added.")
-        except FileNotFoundError:
-            print('Fail to add videos, please load .yaml file and select video folder')
-
-    def dlc_extractframes_command(self):
-
-        config_path = self.label_set_configpath.file_path
-        select_numfram2pick(config_path,self.label_numframes2pick.entry_get)
-
-        if self.mode.get()==1:
-            modes = str('automatic')
-        elif self.mode.get()==2:
-            modes = str('manual')
-
-        if self.algo.get()==1:
-            algorithm = str('uniform')
-        elif self.algo.get()==2:
-            algorithm = str('kmeans')
-
-        if len(self.label_clusterresize.entry_get)==0:
-            clusterresizewidth = int(30)
-        else:
-            clusterresizewidth = int(self.label_clusterresize.entry_get)
-
-        if len(self.label_clusterstep.entry_get)==0:
-            clusterstep = int(1)
-        else:
-            clusterstep = int(self.label_clusterstep.entry_get)
-
-        if self.var_clustercolor.get()==1:
-            clustercolor = True
-        else:
-            clustercolor = False
-
-        if self.var_useopencv.get()==1:
-            useopencv = True
-        else:
-            useopencv = False
-        try:
-            print(config_path,modes,algorithm,clusterstep,clusterresizewidth,clustercolor,useopencv)
-            deeplabcut.extract_frames(config_path,mode=modes,algo=algorithm,crop=False,userfeedback=False,cluster_step=clusterstep,cluster_resizewidth=clusterresizewidth,cluster_color=clustercolor,opencv=useopencv)
-        except:
-            print('Fail to extract frames, please make sure all the information is filled in')
-
-    def dlc_label_frames_command(self):
-        config_path = self.label_set_configpath.file_path
-        deeplabcut.label_frames(config_path)
-
-    def dlc_check_labels_command(self):
-        try:
-            config_path = self.label_set_configpath.file_path
-            deeplabcut.check_labels(config_path)
-        except FileNotFoundError:
-            print('Please load .yaml file to continue')
-
-    def dlc_generate_trainingsets_command(self):
-        try:
-            config_path = self.label_set_configpath.file_path
-            deeplabcut.create_training_dataset(config_path, num_shuffles=1)
-        except FileNotFoundError:
-            print('Please load .yaml file to continue')
-
-    def dlc_train_network_command(self):
-        try:
-            config_path = self.label_set_configpath.file_path
-            deeplabcut.train_network(config_path, shuffle=1, gputouse=0)
-        except FileNotFoundError:
-            print('Please load .yaml file to continue')
-
-    def dlc_evaluate_network_command(self):
-        try:
-            config_path = self.label_set_configpath.file_path
-            deeplabcut.evaluate_network(config_path, plotting=True)
-        except FileNotFoundError:
-            print('Please load .yaml file to continue')
-
-    def dlc_video_analysis_command1(self):
-        try:
-            config_path = self.label_set_configpath.file_path
-
-            vid_name = os.path.basename(self.videoanalysispath.file_path)
-            vid_type = vid_name[-4:]
-
-            deeplabcut.analyze_videos(config_path, [str(self.videoanalysispath.file_path)], shuffle=1,save_as_csv=True, videotype=vid_type)
-        except FileNotFoundError:
-            print('Please load .yaml file and select video path to continue')
-
-    def dlc_video_analysis_command2(self):
-        try:
-            config_path = self.label_set_configpath.file_path
-
-            folder_path = self.videofolderpath.folder_path
-            vid_type = self.video_type.entry_get
-
-            deeplabcut.analyze_videos(config_path, [str(folder_path)], shuffle=1,save_as_csv=True, videotype=vid_type)
-        except FileNotFoundError:
-            print('Please load .yaml file and select folder with videos to continue')
-
-
-    def dlc_plot_videoresults_command(self):
-        try:
-
-            config_path = self.label_set_configpath.file_path
-            deeplabcut.plot_trajectories(config_path, [str(self.videoplotpath.file_path)])
-        except FileNotFoundError:
-            print('Please load .yaml file and select a video file to plot graph')
-
-    def dlc_create_video_command(self):
-        try:
-            config_path = self.label_set_configpath.file_path
-
-            if self.var_saveframes==1:
-                saveframes=True
-            else:
-                saveframes=False
-            vid_name = os.path.basename(self.createvidpath.file_path)
-            vid_type = vid_name[-4:]
-
-            deeplabcut.create_labeled_video(config_path, [str(self.createvidpath.file_path)],save_frames=saveframes, videotype=vid_type)
-        except FileNotFoundError:
-            print('Please select .yaml file and select a video to continue.')
-
 class shorten_video:
 
     def __init__(self):
@@ -1710,6 +1208,28 @@ def extract_allframes():
     #organize
     videopath.grid(row=0,column=0)
     button_extractaf.grid(row=1,column=0)
+
+class multicropmenu:
+    def __init__(self):
+        multimenu = Toplevel()
+        multimenu.minsize(200, 200)
+        multimenu.wm_title("Multi Crop")
+        multimenu.iconbitmap(maincwd + '\\'"golden_lab.ico")
+
+        self.inputfolder = FolderSelect(multimenu,"Video Folder  ")
+        self.outputfolder = FolderSelect(multimenu,"Output Folder")
+
+        self.videotype = Entry_Box(multimenu,"Video type","10")
+        self.croptimes = Entry_Box(multimenu,"# of Crop","10")
+
+        button_multicrop = Button(multimenu,text='Crop',command=lambda:multicrop(self.videotype.entry_get,self.inputfolder.folder_path,self.outputfolder.folder_path,self.croptimes.entry_get))
+
+        #organize
+        self.inputfolder.grid(row=0,sticky=W,pady=2)
+        self.outputfolder.grid(row=1,sticky=W,pady=2)
+        self.videotype.grid(row=2,sticky=W,pady=2)
+        self.croptimes.grid(row=3,sticky=W,pady=2)
+        button_multicrop.grid(row=4,pady=10)
 
 class changefps:
     def __init__(self):
@@ -2743,6 +2263,7 @@ class trainmachinemodel_settings:
         # button
         button_settings_to_ini = Button(trainmms, text='Save settings into global environment', font=('Helvetica', 10, 'bold'),fg='blue', command=self.set_values)
         button_save_meta = Button(trainmms, text='Save settings for specific model', font=('Helvetica', 10, 'bold'),fg='green' ,command=self.save_new)
+        button_remove_meta = Button(trainmms,text='Clear cache',font=('Helvetica', 10, 'bold'),fg='red',command = self.clearcache)
 
         # organize
         load_data_frame.grid(row=0, sticky=W, pady=5, padx=5)
@@ -2785,6 +2306,14 @@ class trainmachinemodel_settings:
 
         button_settings_to_ini.grid(row=6,pady=5)
         button_save_meta.grid(row=7)
+        button_remove_meta.grid(row=8,pady=5)
+
+    def clearcache(self):
+        configs_dir = os.path.join(os.path.dirname(self.configini),'configs')
+        filelist = [f for f in os.listdir(configs_dir) if f.endswith('.csv')]
+        for f in filelist:
+            os.remove(os.path.join(configs_dir,f))
+            print(f,'deleted')
 
     def load_RFvalues(self):
 
@@ -3132,8 +2661,8 @@ class App(object):
         menu.add_cascade(label='Tracking',menu=thirdMenu)
         #dlc
         dlcmenu = Menu(thirdMenu)
-        dlcmenu.add_command(label='Create DLC Model',command=create_project_DLC)
-        dlcmenu.add_command(label='Load DLC Model',command=Load_DLC_Model)
+        dlcmenu.add_command(label='Create DLC Model',command=lambda:print('This version does not have DeepLabCut'))
+        dlcmenu.add_command(label='Load DLC Model',command= lambda: print('This version does not have DeepLabCut'))
         #labelling tool
         labellingtoolmenu = Menu(thirdMenu)
         labellingtoolmenu.add_command(label='labellmg', command=lambda: print('coming soon'))
@@ -3151,6 +2680,7 @@ class App(object):
         menu.add_cascade(label='Tools',menu=fifthMenu)
         fifthMenu.add_command(label='Clip videos',command=shorten_video)
         fifthMenu.add_command(label='Crop videos',command=crop_video)
+        fifthMenu.add_command(label='Multi Crop',command=multicropmenu)
         fifthMenu.add_command(label='Downsample videos',command=video_downsample)
         fifthMenu.add_command(label='Get mm/ppx',command = get_coordinates_from_video)
         fifthMenu.add_command(label='Change fps',command =changefps)

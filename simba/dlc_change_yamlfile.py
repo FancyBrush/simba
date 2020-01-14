@@ -2,7 +2,6 @@ import yaml
 import cv2
 import os
 import shutil
-import deeplabcut
 
 
 def generatetempyaml(yamlfile,videolist):
